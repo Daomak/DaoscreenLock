@@ -1,0 +1,16 @@
+{
+  "$schema": "https://wails.io/schemas/config.json",
+  "name": "DaoscreenLock",
+  "outputfilename": "DaoscreenLock",
+  "author": {
+    "name": "Daomak",
+    "email": "daomak@qq.com"
+  },
+  "info": {
+    "companyName": "Daomak",
+    "productName": "DaoscreenLock",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026 Daomak",
+    "comments": "电脑锁屏工具"
+  }
+}
