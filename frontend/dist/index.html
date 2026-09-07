@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DaoscreenLock - 电脑锁屏工具</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Microsoft YaHei","Segoe UI",sans-serif; background:#f7f8fa; color:#374151; overflow:hidden; }
+
+/* 主界面 */
+.main-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:40px; }
+.app-icon { width:80px; height:80px; border-radius:20px; margin-bottom:20px; object-fit:cover; background:#fff; padding:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+.app-title { font-size:24px; font-weight:700; color:#1f2937; margin-bottom:6px; }
+.app-desc { font-size:13px; color:#9ca3af; margin-bottom:30px; }
+.lock-btn-main {
+  display:flex; align-items:center; gap:10px;
+  padding:14px 48px; border:none; border-radius:10px;
+  background:linear-gradient(135deg,#3b82f6,#2563eb);
+  color:#fff; font-size:16px; font-weight:600; cursor:pointer;
+  box-shadow:0 4px 14px rgba(37,99,235,0.35);
+  transition:all 0.2s;
+}
+.lock-btn-main:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(37,99,235,0.45); }
+.lock-btn-main:active { transform:translateY(0); }
+.lock-btn-main .icon { font-size:20px; }
+.tips { margin-top:24px; font-size:12px; color:#b0b7c0; text-align:center; line-height:1.8; }
+.author-info { margin-top:30px; display:flex; align-items:center; justify-content:center; gap:0; }
+.author-name { font-size:12px; color:#9ca3af; }
+.author-link { font-size:12px; color:#2563eb; text-decoration:none; cursor:pointer; }
+.author-link:hover { text-decoration:underline; }
+.link-sep { margin:0 8px; color:#d1d5db; font-size:12px; }
+
+/* 输入密码弹窗 */
+.modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:12px; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); }
+.modal-header { padding:18px 20px; border-bottom:1px solid #f0f1f3; display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:15px; font-weight:600; color:#1f2937; }
+.modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:#9ca3af; line-height:1; }
+.modal-body { padding:20px; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:12px; color:#6b7280; margin-bottom:6px; }
+.form-group input {
+  width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px;
+  font-size:14px; font-family:inherit; outline:none; transition:border-color 0.15s;
+}
+.form-group input:focus { border-color:#2563eb; }
+.modal-footer { padding:14px 20px; border-top:1px solid #f0f1f3; display:flex; justify-content:flex-end; gap:8px; }
+.btn { padding:8px 18px; border:none; border-radius:7px; font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+.btn-secondary { background:#f3f4f6; color:#4b5563; }
+.btn-secondary:hover { background:#e5e7eb; }
+.btn-primary { background:#2563eb; color:#fff; }
+.btn-primary:hover { background:#1d4ed8; }
+.hint-text { font-size:11px; color:#9ca3af; margin-top:8px; }
+
+/* 锁屏界面 */
+.lock-screen {
+  display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(15,23,42,0.98);
+  z-index:9999; align-items:center; justify-content:center; flex-direction:column;
+}
+.lock-screen.show { display:flex; }
+.lock-time { font-size:90px; font-weight:700; color:#fff; letter-spacing:4px; margin-bottom:4px; font-variant-numeric:tabular-nums; }
+.lock-date { font-size:20px; color:rgba(255,255,255,0.7); margin-bottom:60px; }
+.lock-input-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; width:320px; }
+.lock-input {
+  width:100%; padding:16px 20px; border:1px solid rgba(255,255,255,0.2); border-radius:16px;
+  background:rgba(255,255,255,0.1); color:#fff; font-size:16px; text-align:center; outline:none;
+}
+.lock-input::placeholder { color:rgba(255,255,255,0.4); }
+.lock-input:focus { border-color:rgba(255,255,255,0.5); background:rgba(255,255,255,0.15); }
+.lock-error { font-size:13px; color:#fca5a5; min-height:18px; }
+.lock-unlock-btn {
+  padding:14px 48px; border:none; border-radius:16px;
+  background:#2563eb; color:#fff; font-size:15px; font-weight:500; cursor:pointer;
+  transition:all 0.15s;
+}
+.lock-unlock-btn:hover { background:#1d4ed8; }
+.lock-hint { font-size:12px; color:rgba(255,255,255,0.4); margin-top:10px; }
+</style>
+</head>
+<body>
+
+<!-- 主界面 -->
+<div class="main-screen">
+  <img src="appicon.png" class="app-icon" alt="DaoLock">
+  <div class="app-title">DaoscreenLock</div>
+  <div class="app-desc">电脑锁屏工具</div>
+  <button class="lock-btn-main" onclick="openLockSetup()">
+    <span class="icon">🔒</span>
+    <span>立即锁屏</span>
+  </button>
+  <div class="tips">
+    锁屏后全屏锁定，禁止切屏和任务管理器<br>
+    输入密码解锁，密码仅本次有效
+  </div>
+  <div class="author-info">
+    <span class="author-name">作者：Daomak</span>
+    <span class="link-sep">·</span>
+    <a href="https://github.com/Daomak" target="_blank" class="author-link">GitHub</a>
+    <span class="link-sep">·</span>
+    <a href="https://gitee.com/daomak" target="_blank" class="author-link">Gitee</a>
+  </div>
+</div>
+
+<!-- 输入密码弹窗 -->
+<div class="modal-overlay" id="lock-setup-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>设置锁屏密码</h3>
+      <button class="modal-close" onclick="closeModal('lock-setup-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>锁屏密码</label>
+        <input type="text" id="lock-pwd-input" placeholder="请输入锁屏密码" onkeydown="if(event.key==='Enter')confirmLock()">
+      </div>
+      <div class="hint-text">密码仅本次有效，解锁后需重新设置</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('lock-setup-modal')">取消</button>
+      <button class="btn btn-primary" onclick="confirmLock()">立即锁屏</button>
+    </div>
+  </div>
+</div>
+
+<!-- 锁屏界面 -->
+<div class="lock-screen" id="lock-screen">
+  <div class="lock-time" id="lock-time">00:00:00</div>
+  <div class="lock-date" id="lock-date">----年--月--日 星期--</div>
+  <div class="lock-input-wrap">
+    <input type="password" class="lock-input" id="lock-unlock-input" placeholder="输入密码解锁" onkeydown="if(event.key==='Enter')unlockScreen()">
+    <div class="lock-error" id="lock-error"></div>
+    <button class="lock-unlock-btn" onclick="unlockScreen()">解 锁</button>
+    <div class="lock-hint">全屏锁定中 · 输入密码后按回车或点击解锁</div>
+  </div>
+</div>
+
+<script>
+const go = window.go && window.go.main && window.go.main.App;
+
+let lockPassword = '';
+let lockTimer = null;
+
+// 打开设置密码弹窗
+function openLockSetup() {
+  document.getElementById('lock-pwd-input').value = '';
+  document.getElementById('lock-setup-modal').classList.add('show');
+  setTimeout(() => document.getElementById('lock-pwd-input').focus(), 100);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// 确认锁屏
+function confirmLock() {
+  const pwd = document.getElementById('lock-pwd-input').value;
+  if (!pwd) { alert('请输入锁屏密码'); return; }
+  lockPassword = pwd;
+  closeModal('lock-setup-modal');
+  lockScreen();
+}
+
+// 执行锁屏
+async function lockScreen() {
+  document.getElementById('lock-screen').classList.add('show');
+  document.getElementById('lock-unlock-input').value = '';
+  document.getElementById('lock-error').textContent = '';
+  updateLockTime();
+  lockTimer = setInterval(updateLockTime, 1000);
+  if (go) await go.LockScreen();
+  setTimeout(() => document.getElementById('lock-unlock-input').focus(), 100);
+}
+
+// 解锁
+async function unlockScreen() {
+  const input = document.getElementById('lock-unlock-input').value;
+  if (input === lockPassword) {
+    document.getElementById('lock-screen').classList.remove('show');
+    clearInterval(lockTimer);
+    lockPassword = '';
+    if (go) await go.UnlockScreen();
+  } else {
+    document.getElementById('lock-error').textContent = '密码错误，请重试';
+    document.getElementById('lock-unlock-input').value = '';
+    document.getElementById('lock-unlock-input').focus();
+  }
+}
+
+// 更新锁屏时间
+function updateLockTime() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  const weeks = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  document.getElementById('lock-time').textContent = `${h}:${m}:${s}`;
+  document.getElementById('lock-date').textContent = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日 ${weeks[now.getDay()]}`;
+}
+
+// 锁屏时前端也拦截部分按键
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('lock-screen').classList.contains('show')) {
+    if (e.key === 'Escape' || e.key === 'F11' || e.key === 'F5') {
+      e.preventDefault();
+      return false;
+    }
+  }
+});
+</script>
+</body>
+</html>
